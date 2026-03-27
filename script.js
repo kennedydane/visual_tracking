@@ -426,8 +426,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Render Loop ---
     const draw = (elapsedTime) => {
-        // Base time unit (speed multiplier applies)
-        const t = (elapsedTime / 1000) * config.speed; 
+        // Base time unit (speed multiplier applies). The user requested the old 0.6x speed be the new 1.0x baseline.
+        const effectiveSpeed = config.speed * 0.6;
+        const t = (elapsedTime / 1000) * effectiveSpeed; 
         
         // Handle Clear vs Trail
         if (config.trail === 0) {
@@ -490,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < config.count; i++) {
             // Offset time for each subsequent ball to create following effect
             // The spacing depends on speed and path, 0.2s is a good default lag
-            const timeOffset = i * 0.2 * config.speed; 
+            const timeOffset = i * 0.2 * effectiveSpeed; 
             const ballT = Math.max(0, t - timeOffset);
             
             let pos = patternFunc(ballT);
