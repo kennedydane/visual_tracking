@@ -53,3 +53,15 @@ The application offers extensive granular control to tailor the session to your 
 
 Since this is a standalone web application, no build tools or package managers are required. 
 Simply open `index.html` in any modern web browser to start using the tool, or host the directory on any basic web server.
+
+## Credits & Acknowledgements
+- **Conceptualization & Direction:** Designed and structured by Dane.
+- **Architectural Implementation:** Programmed interactively in collaboration with **Antigravity**, an agentic AI coding assistant built by Google DeepMind.
+- **Eye Tracking Model:** Powered mechanically by [WebGazer.js](https://webgazer.cs.brown.edu/), an open-source library built by the Human-Computer Interaction Lab at Brown University.
+
+## License
+
+This project is licensed under the permissive **MIT License** — see the [LICENSE](LICENSE) file for details. 
+
+**Third-Party Dependencies:**
+This project utilizes [WebGazer.js](https://webgazer.cs.brown.edu/) for webcam-based eye tracking. WebGazer is dynamically linked and is officially dual-licensed under **GPLv3** and **LGPLv3** (for companies with a valuation under $1,000,000). Commercial users deploying this software should ensure their usage complies with WebGazer's GNU stipulations.
