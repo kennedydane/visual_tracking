@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const togglePanelBtn = document.getElementById('toggle-panel-btn');
     const controlsPanel = document.querySelector('.controls-panel');
     const fullscreenBtn = document.getElementById('toggle-fullscreen');
+    const customGroup = document.getElementById('custom-colors-group');
+    const customBgColor = document.getElementById('custom-bg-color');
+    const customBallColor = document.getElementById('custom-ball-color');
     
     // Value Displays
     const speedVal = document.getElementById('speed-val');
@@ -179,6 +182,26 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.setAttribute('data-theme', theme);
         localStorage.setItem('eye-tracking-theme', theme);
         
+        if (theme === 'custom') {
+            customGroup.style.display = 'flex';
+            const bg = customBgColor.value;
+            const ball = customBallColor.value;
+            
+            document.documentElement.style.setProperty('--custom-bg', bg);
+            document.documentElement.style.setProperty('--custom-canvas', bg);
+            document.documentElement.style.setProperty('--custom-panel-bg', hexToRgba(bg, 0.85));
+            document.documentElement.style.setProperty('--custom-border', ball);
+            document.documentElement.style.setProperty('--custom-text', ball);
+            document.documentElement.style.setProperty('--custom-accent', ball);
+            document.documentElement.style.setProperty('--custom-ball', ball);
+            document.documentElement.style.setProperty('--custom-input-bg', hexToRgba(ball, 0.15));
+            
+            localStorage.setItem('eye-tracking-custom-bg', bg);
+            localStorage.setItem('eye-tracking-custom-ball', ball);
+        } else {
+            customGroup.style.display = 'none';
+        }
+        
         // Extract dynamically updated ball color from computed styles
         setTimeout(() => {
             const styles = getComputedStyle(document.body);
@@ -221,6 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
     countSlider.addEventListener('input', updateControls);
     trailSlider.addEventListener('input', updateControls);
     themeSelect.addEventListener('change', updateTheme);
+    customBgColor.addEventListener('input', updateTheme);
+    customBallColor.addEventListener('input', updateTheme);
 
     togglePanelBtn.addEventListener('click', () => {
         controlsPanel.classList.toggle('hidden');
@@ -350,6 +375,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedTheme) {
             themeSelect.value = savedTheme;
         }
+
+        const savedBg = localStorage.getItem('eye-tracking-custom-bg');
+        if (savedBg) customBgColor.value = savedBg;
+        
+        const savedBall = localStorage.getItem('eye-tracking-custom-ball');
+        if (savedBall) customBallColor.value = savedBall;
 
         const savedJSON = localStorage.getItem('eye-tracking-settings');
         if (savedJSON) {

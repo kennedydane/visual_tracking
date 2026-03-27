@@ -50,6 +50,24 @@
     --input-border: #0ff;
 }
 
+[data-theme='custom'] {
+    --bg-color: var(--custom-bg);
+    --canvas-bg: var(--custom-canvas);
+    --panel-bg: var(--custom-panel-bg);
+    --panel-border: var(--custom-border);
+    --text-color: var(--custom-text);
+    --accent-color: var(--custom-accent);
+    --accent-hover: var(--custom-accent);
+    --ball-color: var(--custom-ball);
+    --input-bg: var(--custom-input-bg);
+    --input-border: var(--custom-border);
+}
+
+[data-theme='custom'] .primary-button {
+    color: var(--custom-bg);
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;

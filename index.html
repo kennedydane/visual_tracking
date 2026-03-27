@@ -57,7 +57,19 @@
                         <option value="light">Light Theme (Black on White)</option>
                         <option value="contrast">High Contrast (Red on Black)</option>
                         <option value="neon">Cyberpunk Neon</option>
+                        <option value="custom">Custom Colors</option>
                     </select>
+                </div>
+
+                <div class="control-group" id="custom-colors-group" style="display: none; flex-direction: row; justify-content: space-between; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; width: 48%; gap: 6px;">
+                        <label for="custom-bg-color" style="font-size: 0.8rem;">Background</label>
+                        <input type="color" id="custom-bg-color" value="#1a1a2e" style="width: 100%; height: 35px; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; width: 48%; gap: 6px;">
+                        <label for="custom-ball-color" style="font-size: 0.8rem;">Ball / Accent</label>
+                        <input type="color" id="custom-ball-color" value="#e94560" style="width: 100%; height: 35px; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
+                    </div>
                 </div>
                 
                 <div class="control-group">
