@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showPath: false,
         color: '#00ff88' // Default theme accent
     };
+    
+    let patternSpeeds = {};
 
     // --- Path Helpers ---
     const getWaypoint = (pts, t, speedScaling = 0.5) => {
@@ -216,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         config.pattern = patternSelect.value;
         
         config.speed = parseFloat(speedSlider.value);
+        patternSpeeds[config.pattern] = config.speed;
         speedVal.textContent = config.speed.toFixed(1) + 'x';
         
         config.size = parseFloat(sizeSlider.value);
@@ -231,7 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const settings = {
             pattern: config.pattern,
-            speed: config.speed,
+            patternSpeeds: patternSpeeds,
+            speed: config.speed, // legacy fallback
             size: config.size,
             count: config.count,
             trail: config.trail,
@@ -243,7 +247,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Bind events
-    patternSelect.addEventListener('change', updateControls);
+    patternSelect.addEventListener('change', () => {
+        const newPat = patternSelect.value;
+        if (patternSpeeds[newPat] !== undefined) {
+            speedSlider.value = patternSpeeds[newPat];
+        }
+        updateControls();
+    });
     speedSlider.addEventListener('input', updateControls);
     sizeSlider.addEventListener('input', updateControls);
     countSlider.addEventListener('input', updateControls);
@@ -422,8 +432,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedJSON) {
             try {
                 const s = JSON.parse(savedJSON);
-                if (s.pattern) patternSelect.value = s.pattern;
-                if (s.speed) speedSlider.value = s.speed;
+                if (s.patternSpeeds) {
+                    patternSpeeds = s.patternSpeeds;
+                }
+                if (s.pattern) {
+                    patternSelect.value = s.pattern;
+                    if (patternSpeeds[s.pattern]) speedSlider.value = patternSpeeds[s.pattern];
+                }
+                if (s.speed && (!s.patternSpeeds || !s.patternSpeeds[s.pattern])) speedSlider.value = s.speed;
                 if (s.size) sizeSlider.value = s.size;
                 if (s.count) countSlider.value = s.count;
                 if (s.trail !== undefined) trailSlider.value = s.trail;
