@@ -205,16 +205,23 @@ select:focus {
     border-color: var(--accent-color);
 }
 
+select option {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
 /* Custom dropdown arrow for selects could be added here */
 
 input[type="range"] {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     background: transparent;
 }
 
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
     height: 18px;
     width: 18px;
     border-radius: 50%;
