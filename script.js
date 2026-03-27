@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const customGroup = document.getElementById('custom-colors-group');
     const customBgColor = document.getElementById('custom-bg-color');
     const customBallColor = document.getElementById('custom-ball-color');
+    const showPathCheck = document.getElementById('show-path-check');
     
     // Value Displays
     const speedVal = document.getElementById('speed-val');
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         size: 30, // radius
         count: 1, // number of balls
         trail: 0, // opacity for trailing, 0 means full clear
+        showPath: false,
         color: '#00ff88' // Default theme accent
     };
 
@@ -225,12 +227,15 @@ document.addEventListener('DOMContentLoaded', () => {
         config.trail = parseFloat(trailSlider.value);
         trailVal.textContent = Math.round(config.trail * 100) + '%';
         
+        config.showPath = showPathCheck.checked;
+        
         const settings = {
             pattern: config.pattern,
             speed: config.speed,
             size: config.size,
             count: config.count,
-            trail: config.trail
+            trail: config.trail,
+            showPath: config.showPath
         };
         localStorage.setItem('eye-tracking-settings', JSON.stringify(settings));
 
@@ -243,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sizeSlider.addEventListener('input', updateControls);
     countSlider.addEventListener('input', updateControls);
     trailSlider.addEventListener('input', updateControls);
+    showPathCheck.addEventListener('change', updateControls);
     themeSelect.addEventListener('change', updateTheme);
     customBgColor.addEventListener('input', updateTheme);
     customBallColor.addEventListener('input', updateTheme);
@@ -311,6 +317,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const patternFunc = patterns[config.pattern];
+        
+        // Draw path if requested (and not random)
+        if (config.showPath && config.pattern !== 'random') {
+            const periods = {
+                horizontal: 2, vertical: 2, diagonal: 4 / 0.75, hourglass: 4 / 0.75,
+                fullcross: 12 / 0.75, circle: 2, figure8: 2, square: 4
+            };
+            const period = periods[config.pattern] || 2;
+            const samples = Math.max(100, Math.floor(period * 25)); // adaptive sampling based on length
+            
+            ctx.beginPath();
+            ctx.strokeStyle = hexToRgba(config.color, 0.25);
+            ctx.lineWidth = 4;
+            
+            for (let i = 0; i <= samples; i++) {
+                const sampleT = (i / samples) * period;
+                const pos = patternFunc(sampleT);
+                const screenX = (width / 2) + pos.x * (width / 2 - config.size);
+                const screenY = (height / 2) + pos.y * (height / 2 - config.size);
+                
+                if (i === 0) ctx.moveTo(screenX, screenY);
+                else ctx.lineTo(screenX, screenY);
+            }
+            
+            // Close loops natively
+            if (['circle', 'figure8', 'square', 'diagonal', 'hourglass', 'fullcross'].includes(config.pattern)) {
+                ctx.closePath();
+            }
+            ctx.stroke();
+        }
         
         // Draw multiple balls if configured
         for (let i = 0; i < config.count; i++) {
@@ -391,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (s.size) sizeSlider.value = s.size;
                 if (s.count) countSlider.value = s.count;
                 if (s.trail !== undefined) trailSlider.value = s.trail;
+                if (s.showPath !== undefined) showPathCheck.checked = s.showPath;
             } catch (e) {
                 console.error("Local storage parse error", e);
             }
