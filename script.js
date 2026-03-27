@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         trail: 0, // opacity for trailing, 0 means full clear
         showPath: false,
         cycleDuration: 30, // seconds
-        cycleSelected: ['horizontal', 'vertical', 'diagonal', 'hourglass', 'fullcross', 'circle', 'figure8', 'square'],
+        cycleSelected: ['horizontal', 'vertical', 'reading', 'diagonal', 'hourglass', 'fullcross', 'circle', 'figure8', 'square'],
         color: '#00ff88' // Default theme accent
     };
     
@@ -100,6 +100,24 @@ document.addEventListener('DOMContentLoaded', () => {
         vertical: (t) => {
             const y = Math.sin(t * Math.PI - Math.PI/2);
             return { x: 0, y: y * 0.8 };
+        },
+        reading: (t) => {
+            // Sweep like reading a book.
+            const pts = [
+                {x: -0.8, y: -0.8}, // Line 1 L
+                {x:  0.8, y: -0.8}, // Line 1 R
+                {x: -0.8, y: -0.4}, // Line 2 L
+                {x:  0.8, y: -0.4}, // Line 2 R
+                {x: -0.8, y:  0.0}, // Line 3 L
+                {x:  0.8, y:  0.0}, // Line 3 R
+                {x: -0.8, y:  0.4}, // Line 4 L
+                {x:  0.8, y:  0.4}, // Line 4 R
+                {x: -0.8, y:  0.8}, // Line 5 L
+                {x:  0.8, y:  0.8}, // Line 5 R
+                {x: -0.8, y: -0.8}  // Sweeping return to start
+            ];
+            // 10 Segments
+            return getWaypoint(pts, t, 0.75);
         },
         diagonal: (t) => {
             // As exactly requested: TL -> BL -> BR -> TR -> TL
@@ -429,7 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Draw path if requested (and not random or currently transitioning intensely)
         if (config.showPath && activePatternId !== 'random' && !transition.active) {
             const periods = {
-                horizontal: 2, vertical: 2, diagonal: 4 / 0.75, hourglass: 4 / 0.75,
+                horizontal: 2, vertical: 2, 
+                reading: 10 / 0.75,
+                diagonal: 4 / 0.75, hourglass: 4 / 0.75,
                 fullcross: 12 / 0.75, circle: 2, figure8: 2, square: 4
             };
             const period = periods[activePatternId] || 2;
@@ -450,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Close loops natively
-            if (['circle', 'figure8', 'square', 'diagonal', 'hourglass', 'fullcross'].includes(activePatternId)) {
+            if (['circle', 'figure8', 'square', 'diagonal', 'reading', 'hourglass', 'fullcross'].includes(activePatternId)) {
                 ctx.closePath();
             }
             ctx.stroke();
