@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const calibrationPoints = document.getElementById('calibration-points');
     const calibrationMirror = document.getElementById('calibration-mirror');
     const startCalibrationBtn = document.getElementById('start-calibration-btn');
+    const trackingDotGroup = document.getElementById('tracking-dot-group');
+    const trackingDotSlider = document.getElementById('tracking-dot-slider');
+    const trackingDotVal = document.getElementById('tracking-dot-val');
     
     // Value Displays
     const speedVal = document.getElementById('speed-val');
@@ -61,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cycleDuration: 30, // seconds
         cycleSelected: ['horizontal', 'vertical', 'reading', 'diagonal', 'hourglass', 'fullcross', 'circle', 'figure8', 'square'],
         enableTracking: false,
+        trackingOpacity: 0.0,
         color: '#00ff88' // Default theme accent
     };
     
@@ -319,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 trackingAccuracy.style.display = 'block';
                 recalibrateBtn.style.display = 'block';
+                trackingDotGroup.style.display = 'flex';
             } catch (err) {
                 console.error("Tracking Error:", err);
                 alert("Camera Error: Permission Denied or Not Allowed!\n\nEye tracking requires webcam access, which modern browsers block on local 'file://' paths for security.\n\nPlease host this folder using a local server (e.g., run 'python3 -m http.server' in the terminal) and open http://localhost:8000 to use Eye Tracking.");
@@ -327,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 config.enableTracking = false;
                 enableTrackingCheck.checked = false;
                 recalibrateBtn.style.display = 'none';
+                trackingDotGroup.style.display = 'none';
                 localStorage.setItem('eye-tracking-settings', JSON.stringify({...JSON.parse(localStorage.getItem('eye-tracking-settings') || '{}'), enableTracking: false}));
             }
         } else {
@@ -336,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             trackingAccuracy.style.display = 'none';
             recalibrateBtn.style.display = 'none';
+            trackingDotGroup.style.display = 'none';
             currentGazeX = null;
             currentGazeY = null;
         }
@@ -427,6 +434,9 @@ document.addEventListener('DOMContentLoaded', () => {
         config.pathOpacity = parseFloat(pathOpacitySlider.value);
         pathOpacityVal.textContent = Math.round(config.pathOpacity * 100) + '%';
         
+        config.trackingOpacity = parseFloat(trackingDotSlider.value);
+        trackingDotVal.textContent = Math.round(config.trackingOpacity * 100) + '%';
+        
         config.cycleDuration = parseInt(cycleDurationSlider.value);
         cycleDurationVal.textContent = config.cycleDuration + 's';
         
@@ -442,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
             count: config.count,
             trail: config.trail,
             pathOpacity: config.pathOpacity,
+            trackingOpacity: config.trackingOpacity,
             cycleDuration: config.cycleDuration,
             cycleSelected: config.cycleSelected
         };
@@ -463,6 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
     countSlider.addEventListener('input', updateControls);
     trailSlider.addEventListener('input', updateControls);
     pathOpacitySlider.addEventListener('input', updateControls);
+    trackingDotSlider.addEventListener('input', updateControls);
     cycleDurationSlider.addEventListener('input', updateControls);
     cycleCheckboxes.forEach(cb => cb.addEventListener('change', updateControls));
     themeSelect.addEventListener('change', updateTheme);
@@ -681,18 +693,26 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Plot Eye Tracking Ghost Orb and calculate accuracy exclusively against the primary lead ball
             if (i === 0 && config.enableTracking && currentGazeX !== null && currentGazeY !== null) {
-                // Ghost Ring Outer
-                ctx.beginPath();
-                ctx.arc(currentGazeX, currentGazeY, config.size * 1.5, 0, Math.PI * 2);
-                ctx.strokeStyle = config.color;
-                ctx.lineWidth = 2;
-                ctx.stroke();
                 
-                // Ghost Core Inner
-                ctx.beginPath();
-                ctx.arc(currentGazeX, currentGazeY, config.size * 0.4, 0, Math.PI * 2);
-                ctx.fillStyle = hexToRgba(config.color, 0.5);
-                ctx.fill();
+                if (config.trackingOpacity > 0) {
+                    ctx.save();
+                    ctx.globalAlpha = config.trackingOpacity;
+                    
+                    // Ghost Ring Outer
+                    ctx.beginPath();
+                    ctx.arc(currentGazeX, currentGazeY, config.size * 1.5, 0, Math.PI * 2);
+                    ctx.strokeStyle = config.color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Ghost Core Inner
+                    ctx.beginPath();
+                    ctx.arc(currentGazeX, currentGazeY, config.size * 0.4, 0, Math.PI * 2);
+                    ctx.fillStyle = hexToRgba(config.color, 0.5);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                }
 
                 // Live Accuracy Mathematical Mapping
                 // 100% means looking directly at the dot. Drops off linearly towards 0% dynamically.
@@ -797,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Legacy boolean support
                     pathOpacitySlider.value = s.showPath ? 0.25 : 0;
                 }
+                if (s.trackingOpacity !== undefined) trackingDotSlider.value = s.trackingOpacity;
                 if (s.cycleDuration !== undefined) cycleDurationSlider.value = s.cycleDuration;
                 if (s.cycleSelected !== undefined && Array.isArray(s.cycleSelected)) {
                     cycleCheckboxes.forEach(cb => {
