@@ -177,6 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTheme = () => {
         const theme = themeSelect.value;
         document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('eye-tracking-theme', theme);
+        
         // Extract dynamically updated ball color from computed styles
         setTimeout(() => {
             const styles = getComputedStyle(document.body);
@@ -200,6 +202,15 @@ document.addEventListener('DOMContentLoaded', () => {
         config.trail = parseFloat(trailSlider.value);
         trailVal.textContent = Math.round(config.trail * 100) + '%';
         
+        const settings = {
+            pattern: config.pattern,
+            speed: config.speed,
+            size: config.size,
+            count: config.count,
+            trail: config.trail
+        };
+        localStorage.setItem('eye-tracking-settings', JSON.stringify(settings));
+
         if (!isRunning) draw(0);
     };
 
@@ -333,7 +344,30 @@ document.addEventListener('DOMContentLoaded', () => {
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
+    // Load Saved State
+    const loadSettings = () => {
+        const savedTheme = localStorage.getItem('eye-tracking-theme');
+        if (savedTheme) {
+            themeSelect.value = savedTheme;
+        }
+
+        const savedJSON = localStorage.getItem('eye-tracking-settings');
+        if (savedJSON) {
+            try {
+                const s = JSON.parse(savedJSON);
+                if (s.pattern) patternSelect.value = s.pattern;
+                if (s.speed) speedSlider.value = s.speed;
+                if (s.size) sizeSlider.value = s.size;
+                if (s.count) countSlider.value = s.count;
+                if (s.trail !== undefined) trailSlider.value = s.trail;
+            } catch (e) {
+                console.error("Local storage parse error", e);
+            }
+        }
+    };
+
     // Initialize
+    loadSettings();
     resize();
     updateTheme();
     updateControls();
