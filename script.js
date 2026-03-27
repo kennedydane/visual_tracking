@@ -465,12 +465,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const screenX = (width / 2) + pos.x * (width / 2 - config.size);
                 const screenY = (height / 2) + pos.y * (height / 2 - config.size);
                 
-                if (i === 0) ctx.moveTo(screenX, screenY);
-                else ctx.lineTo(screenX, screenY);
+                if (i === 0) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    // Specific override: Do not draw the final sweep-return line for 'reading'
+                    if (activePatternId === 'reading' && (sampleT * 0.75) > 9.0) {
+                        ctx.moveTo(screenX, screenY); // lift pen
+                    } else {
+                        ctx.lineTo(screenX, screenY);
+                    }
+                }
             }
             
             // Close loops natively
-            if (['circle', 'figure8', 'square', 'diagonal', 'reading', 'hourglass', 'fullcross'].includes(activePatternId)) {
+            if (['circle', 'figure8', 'square', 'diagonal', 'hourglass', 'fullcross'].includes(activePatternId)) {
                 ctx.closePath();
             }
             ctx.stroke();
