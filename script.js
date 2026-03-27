@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const customGroup = document.getElementById('custom-colors-group');
     const customBgColor = document.getElementById('custom-bg-color');
     const customBallColor = document.getElementById('custom-ball-color');
-    const showPathCheck = document.getElementById('show-path-check');
+    const pathOpacitySlider = document.getElementById('path-opacity-slider');
+    const pathOpacityVal = document.getElementById('path-opacity-val');
     const cycleSettingsGroup = document.getElementById('cycle-settings-group');
     const cycleDurationSlider = document.getElementById('cycle-duration-slider');
     const cycleDurationVal = document.getElementById('cycle-duration-val');
@@ -49,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         size: 30, // radius
         count: 1, // number of balls
         trail: 0, // opacity for trailing, 0 means full clear
-        showPath: false,
+        pathOpacity: 0.25,
         cycleDuration: 30, // seconds
         cycleSelected: ['horizontal', 'vertical', 'reading', 'diagonal', 'hourglass', 'fullcross', 'circle', 'figure8', 'square'],
         color: '#00ff88' // Default theme accent
@@ -280,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
         config.trail = parseFloat(trailSlider.value);
         trailVal.textContent = Math.round(config.trail * 100) + '%';
         
-        config.showPath = showPathCheck.checked;
+        config.pathOpacity = parseFloat(pathOpacitySlider.value);
+        pathOpacityVal.textContent = Math.round(config.pathOpacity * 100) + '%';
         
         config.cycleDuration = parseInt(cycleDurationSlider.value);
         cycleDurationVal.textContent = config.cycleDuration + 's';
@@ -296,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             size: config.size,
             count: config.count,
             trail: config.trail,
-            showPath: config.showPath,
+            pathOpacity: config.pathOpacity,
             cycleDuration: config.cycleDuration,
             cycleSelected: config.cycleSelected
         };
@@ -317,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sizeSlider.addEventListener('input', updateControls);
     countSlider.addEventListener('input', updateControls);
     trailSlider.addEventListener('input', updateControls);
-    showPathCheck.addEventListener('change', updateControls);
+    pathOpacitySlider.addEventListener('input', updateControls);
     cycleDurationSlider.addEventListener('input', updateControls);
     cycleCheckboxes.forEach(cb => cb.addEventListener('change', updateControls));
     themeSelect.addEventListener('change', updateTheme);
@@ -445,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const patternFunc = patterns[activePatternId];
         
         // Draw path if requested (and not random or currently transitioning intensely)
-        if (config.showPath && activePatternId !== 'random' && !transition.active) {
+        if (config.pathOpacity > 0 && activePatternId !== 'random' && !transition.active) {
             const periods = {
                 horizontal: 2, vertical: 2, 
                 reading: 10 / 0.75,
@@ -456,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const samples = Math.max(100, Math.floor(period * 25)); // adaptive sampling based on length
             
             ctx.beginPath();
-            ctx.strokeStyle = hexToRgba(config.color, 0.25);
+            ctx.strokeStyle = hexToRgba(config.color, config.pathOpacity);
             ctx.lineWidth = 4;
             
             for (let i = 0; i <= samples; i++) {
@@ -619,7 +621,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (s.size) sizeSlider.value = s.size;
                 if (s.count) countSlider.value = s.count;
                 if (s.trail !== undefined) trailSlider.value = s.trail;
-                if (s.showPath !== undefined) showPathCheck.checked = s.showPath;
+                if (s.pathOpacity !== undefined) {
+                    pathOpacitySlider.value = s.pathOpacity;
+                } else if (s.showPath !== undefined) {
+                    // Legacy boolean support
+                    pathOpacitySlider.value = s.showPath ? 0.25 : 0;
+                }
                 if (s.cycleDuration !== undefined) cycleDurationSlider.value = s.cycleDuration;
                 if (s.cycleSelected !== undefined && Array.isArray(s.cycleSelected)) {
                     cycleCheckboxes.forEach(cb => {
