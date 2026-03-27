@@ -24,6 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const cycleCheckboxes = document.querySelectorAll('#cycle-checkboxes input[type="checkbox"]');
     const sessionTimerEl = document.getElementById('session-timer');
     const resetTimerBtn = document.getElementById('reset-timer-btn');
+    const cycleControlsContainer = document.getElementById('cycle-controls-container');
+    const cyclePrevBtn = document.getElementById('cycle-prev-btn');
+    const cyclePauseBtn = document.getElementById('cycle-pause-btn');
+    const cycleNextBtn = document.getElementById('cycle-next-btn');
     
     // Value Displays
     const speedVal = document.getElementById('speed-val');
@@ -55,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activePatternId = config.pattern;
     let cycleTimer = 0;
     let currentCycleIndex = 0;
+    let isCyclePaused = false;
     
     const transition = {
         active: false,
@@ -238,8 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (config.pattern === 'cycle') {
             cycleSettingsGroup.style.display = 'flex';
+            cycleControlsContainer.style.display = 'flex';
         } else {
             cycleSettingsGroup.style.display = 'none';
+            cycleControlsContainer.style.display = 'none';
         }
         
         config.speed = parseFloat(speedSlider.value);
@@ -298,6 +305,34 @@ document.addEventListener('DOMContentLoaded', () => {
     themeSelect.addEventListener('change', updateTheme);
     customBgColor.addEventListener('input', updateTheme);
     customBallColor.addEventListener('input', updateTheme);
+
+    const triggerCycleJump = (step) => {
+        if (config.cycleSelected.length === 0) return;
+        currentCycleIndex = ((currentCycleIndex + step) % config.cycleSelected.length + config.cycleSelected.length) % config.cycleSelected.length;
+        const newPat = config.cycleSelected[currentCycleIndex];
+        
+        if (newPat !== activePatternId) {
+            transition.active = true;
+            transition.startTime = window.lastTick || 0;
+            transition.fromPattern = activePatternId;
+            activePatternId = newPat;
+            
+            if (patternSpeeds[activePatternId] !== undefined && speedSlider.value != patternSpeeds[activePatternId]) {
+                speedSlider.value = patternSpeeds[activePatternId];
+                config.speed = parseFloat(speedSlider.value);
+                speedVal.textContent = config.speed.toFixed(1) + 'x';
+            }
+        }
+        cycleTimer = 0; // reset
+    };
+    
+    cyclePrevBtn.addEventListener('click', () => triggerCycleJump(-1));
+    cycleNextBtn.addEventListener('click', () => triggerCycleJump(1));
+    cyclePauseBtn.addEventListener('click', () => {
+        isCyclePaused = !isCyclePaused;
+        cyclePauseBtn.textContent = isCyclePaused ? '▶️' : '⏸️';
+        cyclePauseBtn.title = isCyclePaused ? 'Resume Cycle' : 'Pause Cycle';
+    });
 
     togglePanelBtn.addEventListener('click', () => {
         controlsPanel.classList.toggle('hidden');
@@ -492,25 +527,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Handle Auto-Cycling
         if (config.pattern === 'cycle' && config.cycleSelected.length > 0) {
-            cycleTimer += dt;
-            if (cycleTimer > config.cycleDuration * 1000) {
-                cycleTimer = 0;
-                currentCycleIndex = (currentCycleIndex + 1) % config.cycleSelected.length;
-                const newPat = config.cycleSelected[currentCycleIndex];
-                
-                if (newPat !== activePatternId) {
-                    // trigger transition!
-                    transition.active = true;
-                    transition.startTime = elapsedTime;
-                    transition.fromPattern = activePatternId;
-                    activePatternId = newPat;
-                    
-                    // Update speed for the newly cycled pattern if a customized speed exists!
-                    if (patternSpeeds[activePatternId] !== undefined && speedSlider.value != patternSpeeds[activePatternId]) {
-                        speedSlider.value = patternSpeeds[activePatternId];
-                        config.speed = parseFloat(speedSlider.value);
-                        speedVal.textContent = config.speed.toFixed(1) + 'x';
-                    }
+            if (!isCyclePaused) {
+                cycleTimer += dt;
+                if (cycleTimer > config.cycleDuration * 1000) {
+                    triggerCycleJump(1);
                 }
             }
         } else {
