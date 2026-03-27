@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const customBgColor = document.getElementById('custom-bg-color');
     const customBallColor = document.getElementById('custom-ball-color');
     const showPathCheck = document.getElementById('show-path-check');
+    const cycleSettingsGroup = document.getElementById('cycle-settings-group');
+    const cycleDurationSlider = document.getElementById('cycle-duration-slider');
+    const cycleDurationVal = document.getElementById('cycle-duration-val');
+    const cycleCheckboxes = document.querySelectorAll('#cycle-checkboxes input[type="checkbox"]');
     
     // Value Displays
     const speedVal = document.getElementById('speed-val');
@@ -39,10 +43,22 @@ document.addEventListener('DOMContentLoaded', () => {
         count: 1, // number of balls
         trail: 0, // opacity for trailing, 0 means full clear
         showPath: false,
+        cycleDuration: 30, // seconds
+        cycleSelected: ['horizontal', 'vertical', 'diagonal', 'hourglass', 'fullcross', 'circle', 'figure8', 'square'],
         color: '#00ff88' // Default theme accent
     };
     
     let patternSpeeds = {};
+    let activePatternId = config.pattern;
+    let cycleTimer = 0;
+    let currentCycleIndex = 0;
+    
+    const transition = {
+        active: false,
+        startTime: 0,
+        duration: 800, // ms
+        fromPattern: 'horizontal'
+    };
 
     // --- Path Helpers ---
     const getWaypoint = (pts, t, speedScaling = 0.5) => {
@@ -217,6 +233,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateControls = () => {
         config.pattern = patternSelect.value;
         
+        if (config.pattern === 'cycle') {
+            cycleSettingsGroup.style.display = 'flex';
+        } else {
+            cycleSettingsGroup.style.display = 'none';
+        }
+        
         config.speed = parseFloat(speedSlider.value);
         patternSpeeds[config.pattern] = config.speed;
         speedVal.textContent = config.speed.toFixed(1) + 'x';
@@ -232,6 +254,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         config.showPath = showPathCheck.checked;
         
+        config.cycleDuration = parseInt(cycleDurationSlider.value);
+        cycleDurationVal.textContent = config.cycleDuration + 's';
+        
+        config.cycleSelected = Array.from(cycleCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        
         const settings = {
             pattern: config.pattern,
             patternSpeeds: patternSpeeds,
@@ -239,7 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
             size: config.size,
             count: config.count,
             trail: config.trail,
-            showPath: config.showPath
+            showPath: config.showPath,
+            cycleDuration: config.cycleDuration,
+            cycleSelected: config.cycleSelected
         };
         localStorage.setItem('eye-tracking-settings', JSON.stringify(settings));
 
@@ -259,6 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
     countSlider.addEventListener('input', updateControls);
     trailSlider.addEventListener('input', updateControls);
     showPathCheck.addEventListener('change', updateControls);
+    cycleDurationSlider.addEventListener('input', updateControls);
+    cycleCheckboxes.forEach(cb => cb.addEventListener('change', updateControls));
     themeSelect.addEventListener('change', updateTheme);
     customBgColor.addEventListener('input', updateTheme);
     customBallColor.addEventListener('input', updateTheme);
@@ -326,15 +359,15 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillRect(0, 0, width, height);
         }
 
-        const patternFunc = patterns[config.pattern];
+        const patternFunc = patterns[activePatternId];
         
-        // Draw path if requested (and not random)
-        if (config.showPath && config.pattern !== 'random') {
+        // Draw path if requested (and not random or currently transitioning intensely)
+        if (config.showPath && activePatternId !== 'random' && !transition.active) {
             const periods = {
                 horizontal: 2, vertical: 2, diagonal: 4 / 0.75, hourglass: 4 / 0.75,
                 fullcross: 12 / 0.75, circle: 2, figure8: 2, square: 4
             };
-            const period = periods[config.pattern] || 2;
+            const period = periods[activePatternId] || 2;
             const samples = Math.max(100, Math.floor(period * 25)); // adaptive sampling based on length
             
             ctx.beginPath();
@@ -352,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Close loops natively
-            if (['circle', 'figure8', 'square', 'diagonal', 'hourglass', 'fullcross'].includes(config.pattern)) {
+            if (['circle', 'figure8', 'square', 'diagonal', 'hourglass', 'fullcross'].includes(activePatternId)) {
                 ctx.closePath();
             }
             ctx.stroke();
@@ -365,7 +398,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const timeOffset = i * 0.2 * config.speed; 
             const ballT = Math.max(0, t - timeOffset);
             
-            const pos = patternFunc(ballT);
+            let pos = patternFunc(ballT);
+            
+            // Continuous Function Lerping for Smooth Transitions
+            if (transition.active) {
+                let progress = (elapsedTime - transition.startTime) / transition.duration;
+                if (progress < 1.0) {
+                    // Ease-in-out curve
+                    const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    
+                    const fromFunc = patterns[transition.fromPattern] || patterns.horizontal;
+                    const fromPos = fromFunc(ballT);
+                    
+                    pos = {
+                        x: fromPos.x + (pos.x - fromPos.x) * ease,
+                        y: fromPos.y + (pos.y - fromPos.y) * ease
+                    };
+                } else if (i === config.count - 1) {
+                    transition.active = false; // End transition once final trailing ball completes
+                }
+            }
             
             // Map normalized [-1, 1] coords to screen, leaving margin for ball radius
             const minDim = Math.min(width, height) / 2 - config.size;
@@ -401,7 +453,43 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isRunning) return;
         
         const elapsedTime = timestamp - startTime;
+        const dt = elapsedTime - (window.lastTick || 0);
         window.lastTick = elapsedTime; // save state for pausing
+        
+        // Handle Auto-Cycling
+        if (config.pattern === 'cycle' && config.cycleSelected.length > 0) {
+            cycleTimer += dt;
+            if (cycleTimer > config.cycleDuration * 1000) {
+                cycleTimer = 0;
+                currentCycleIndex = (currentCycleIndex + 1) % config.cycleSelected.length;
+                const newPat = config.cycleSelected[currentCycleIndex];
+                
+                if (newPat !== activePatternId) {
+                    // trigger transition!
+                    transition.active = true;
+                    transition.startTime = elapsedTime;
+                    transition.fromPattern = activePatternId;
+                    activePatternId = newPat;
+                    
+                    // Update speed for the newly cycled pattern if a customized speed exists!
+                    if (patternSpeeds[activePatternId] !== undefined && speedSlider.value != patternSpeeds[activePatternId]) {
+                        speedSlider.value = patternSpeeds[activePatternId];
+                        config.speed = parseFloat(speedSlider.value);
+                        speedVal.textContent = config.speed.toFixed(1) + 'x';
+                    }
+                }
+            }
+        } else {
+            // Manual Mode: Catch UI dropdown changing config.pattern directly
+            const reqPat = config.pattern === 'cycle' ? (config.cycleSelected[0] || 'horizontal') : config.pattern;
+            if (activePatternId !== reqPat) {
+                transition.active = true;
+                transition.startTime = elapsedTime;
+                transition.fromPattern = activePatternId;
+                activePatternId = reqPat;
+            }
+            cycleTimer = 0; // maintain reset while manual
+        }
         
         draw(elapsedTime);
         animationId = requestAnimationFrame(loop);
@@ -444,6 +532,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (s.count) countSlider.value = s.count;
                 if (s.trail !== undefined) trailSlider.value = s.trail;
                 if (s.showPath !== undefined) showPathCheck.checked = s.showPath;
+                if (s.cycleDuration !== undefined) cycleDurationSlider.value = s.cycleDuration;
+                if (s.cycleSelected !== undefined && Array.isArray(s.cycleSelected)) {
+                    cycleCheckboxes.forEach(cb => {
+                        cb.checked = s.cycleSelected.includes(cb.value);
+                    });
+                }
             } catch (e) {
                 console.error("Local storage parse error", e);
             }

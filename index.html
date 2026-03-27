@@ -33,7 +33,28 @@
                         <option value="figure8">Figure 8 (Infinity)</option>
                         <option value="square">Square Boundary</option>
                         <option value="random">Smooth Pursuit (Random)</option>
+                        <option value="cycle">Cycle Selected (Auto-Rotate)</option>
                     </select>
+                </div>
+                
+                <div class="control-group" id="cycle-settings-group" style="display: none; flex-direction: column; gap: 10px; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--input-border);">
+                    <label>
+                        Duration per Pattern <span id="cycle-duration-val">30s</span>
+                    </label>
+                    <input type="range" id="cycle-duration-slider" min="5" max="120" step="5" value="30">
+                    
+                    <label style="margin-top: 10px;">Select Patterns to Cycle:</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;" id="cycle-checkboxes">
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="horizontal" checked> Horizontal</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="vertical" checked> Vertical</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="diagonal" checked> Corners</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="hourglass" checked> Hourglass</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="fullcross" checked> Full Cross</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="circle" checked> Circle</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="figure8" checked> Figure 8</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="square" checked> Square</label>
+                        <label style="cursor: pointer; justify-content: flex-start; gap: 6px;"><input type="checkbox" value="random"> Random</label>
+                    </div>
                 </div>
 
                 <div class="control-group">
