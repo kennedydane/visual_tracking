@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Eye Tracking Exercises</title>
+    <meta name="description" content="Customizable visual tracking exercises for eye flexibility and concentration.">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <div id="canvas-container">
+            <canvas id="tracking-canvas"></canvas>
+        </div>
+
+        <aside id="controls-panel" class="controls-panel">
+            <div class="controls-header">
+                <h1>Eye Tracking</h1>
+                <button id="toggle-fullscreen" class="icon-button" title="Toggle Fullscreen">⛶</button>
+            </div>
+
+            <div class="controls-body">
+                <div class="control-group">
+                    <label for="pattern-select">Pattern Pattern</label>
+                    <select id="pattern-select">
+                        <option value="horizontal">Horizontal Side-to-Side</option>
+                        <option value="vertical">Vertical Up-and-Down</option>
+                        <option value="diagonal">Corner Sequence</option>
+                        <option value="hourglass">Diagonal Cross (Hourglass)</option>
+                        <option value="fullcross">Full Cross Tour</option>
+                        <option value="circle">Circular Rotation</option>
+                        <option value="figure8">Figure 8 (Infinity)</option>
+                        <option value="square">Square Boundary</option>
+                        <option value="random">Smooth Pursuit (Random)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Speed <span id="speed-val">1x</span>
+                    </label>
+                    <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Ball Size <span id="size-val">30px</span>
+                    </label>
+                    <input type="range" id="size-slider" min="10" max="150" step="5" value="30">
+                </div>
+
+                <div class="control-group">
+                    <label for="theme-select">Theme</label>
+                    <select id="theme-select">
+                        <option value="dark">Dark Theme (Green on Black)</option>
+                        <option value="light">Light Theme (Black on White)</option>
+                        <option value="contrast">High Contrast (Red on Black)</option>
+                        <option value="neon">Cyberpunk Neon</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        Number of Balls <span id="count-val">1</span>
+                    </label>
+                    <input type="range" id="count-slider" min="1" max="10" step="1" value="1">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        Trail Effect <span id="trail-val">0%</span>
+                    </label>
+                    <input type="range" id="trail-slider" min="0" max="0.95" step="0.05" value="0">
+                </div>
+
+                <button id="start-btn" class="primary-button">Start Exercise</button>
+            </div>
+        </aside>
+
+        <!-- Toggle control panel visibility when running -->
+        <button id="toggle-panel-btn" class="floating-btn" title="Toggle Controls">⚙</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
