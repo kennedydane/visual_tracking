@@ -29,6 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const cyclePrevBtn = document.getElementById('cycle-prev-btn');
     const cyclePauseBtn = document.getElementById('cycle-pause-btn');
     const cycleNextBtn = document.getElementById('cycle-next-btn');
+    const enableTrackingCheck = document.getElementById('enable-tracking-check');
+    const recalibrateBtn = document.getElementById('recalibrate-btn');
+    const trackingAccuracy = document.getElementById('tracking-accuracy');
+    const calibrationOverlay = document.getElementById('calibration-overlay');
+    const calibrationPoints = document.getElementById('calibration-points');
+    const calibrationMirror = document.getElementById('calibration-mirror');
+    const startCalibrationBtn = document.getElementById('start-calibration-btn');
     
     // Value Displays
     const speedVal = document.getElementById('speed-val');
@@ -53,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pathOpacity: 0.25,
         cycleDuration: 30, // seconds
         cycleSelected: ['horizontal', 'vertical', 'reading', 'diagonal', 'hourglass', 'fullcross', 'circle', 'figure8', 'square'],
+        enableTracking: false,
         color: '#00ff88' // Default theme accent
     };
     
@@ -61,6 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let cycleTimer = 0;
     let currentCycleIndex = 0;
     let isCyclePaused = false;
+    
+    // WebGazer State
+    let webgazerInitialized = false;
+    let currentGazeX = null;
+    let currentGazeY = null;
+    let accuracySamples = [];
     
     const transition = {
         active: false,
@@ -256,6 +270,135 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isRunning) draw(0);
         }, 50); // Small delay to let CSS apply
     };
+
+    // --- WebGazer & Calibration ---
+    const initWebGazer = async () => {
+        if (!window.webgazer) {
+            console.error("WebGazer not loaded from CDN.");
+            return;
+        }
+        
+        await window.webgazer.setGazeListener((data, elapsedTime) => {
+                if (data == null) return;
+                currentGazeX = data.x;
+                currentGazeY = data.y;
+            }).begin();
+            
+        window.webgazer.showVideoPreview(true).showPredictionPoints(false);
+        webgazerInitialized = true;
+    };
+    
+    const showCalibrationScreen = () => {
+        calibrationOverlay.style.display = 'flex';
+        calibrationPoints.style.display = 'none';
+        document.getElementById('calibration-intro').style.display = 'flex';
+        document.getElementById('calibration-active-text').style.display = 'none';
+        
+        // Grab the active WebGazer media stream and pipe it to our centered calibration box
+        setTimeout(() => {
+            const feed = document.getElementById('webgazerVideoFeed');
+            if (feed && feed.srcObject) {
+                calibrationMirror.srcObject = feed.srcObject;
+            }
+        }, 1000); // 1s delay ensures the camera Promise has fully resolved and bound to WebGazer's native node
+
+        controlsPanel.classList.add('hidden');
+        togglePanelBtn.classList.remove('active');
+        if (isRunning) startBtn.click(); // pause completely
+    };
+    
+    const toggleTrackingMode = async () => {
+        if (config.enableTracking) {
+            try {
+                if (!webgazerInitialized) {
+                    await initWebGazer();
+                    showCalibrationScreen();
+                } else {
+                    window.webgazer.resume();
+                    window.webgazer.showVideoPreview(true);
+                }
+                trackingAccuracy.style.display = 'block';
+                recalibrateBtn.style.display = 'block';
+            } catch (err) {
+                console.error("Tracking Error:", err);
+                alert("Camera Error: Permission Denied or Not Allowed!\n\nEye tracking requires webcam access, which modern browsers block on local 'file://' paths for security.\n\nPlease host this folder using a local server (e.g., run 'python3 -m http.server' in the terminal) and open http://localhost:8000 to use Eye Tracking.");
+                
+                // Revert UI automatically
+                config.enableTracking = false;
+                enableTrackingCheck.checked = false;
+                recalibrateBtn.style.display = 'none';
+                localStorage.setItem('eye-tracking-settings', JSON.stringify({...JSON.parse(localStorage.getItem('eye-tracking-settings') || '{}'), enableTracking: false}));
+            }
+        } else {
+            if (webgazerInitialized) {
+                window.webgazer.pause();
+                window.webgazer.showVideoPreview(false);
+            }
+            trackingAccuracy.style.display = 'none';
+            recalibrateBtn.style.display = 'none';
+            currentGazeX = null;
+            currentGazeY = null;
+        }
+    };
+    
+    startCalibrationBtn.addEventListener('click', () => {
+        document.getElementById('calibration-intro').style.display = 'none';
+        document.getElementById('calibration-active-text').style.display = 'block';
+        calibrationPoints.style.display = 'block';
+        calibrationPoints.innerHTML = '';
+        
+        const positions = [
+            {top: '10%', left: '10%'}, {top: '10%', left: '50%'}, {top: '10%', left: '90%'},
+            {top: '50%', left: '10%'}, {top: '50%', left: '50%'}, {top: '50%', left: '90%'},
+            {top: '90%', left: '10%'}, {top: '90%', left: '50%'}, {top: '90%', left: '90%'}
+        ];
+        
+        let clicksCount = 0;
+        
+        positions.forEach(pos => {
+            const btn = document.createElement('button');
+            btn.style.position = 'absolute';
+            btn.style.top = pos.top;
+            btn.style.left = pos.left;
+            btn.style.transform = 'translate(-50%, -50%)';
+            btn.style.width = '30px';
+            btn.style.height = '30px';
+            btn.style.borderRadius = '50%';
+            btn.style.backgroundColor = 'red';
+            btn.style.border = '2px solid white';
+            btn.style.cursor = 'pointer';
+            
+            let clicks = 0;
+            btn.addEventListener('click', () => {
+                clicks++;
+                btn.style.transform = `translate(-50%, -50%) scale(${1 - clicks * 0.15})`;
+                btn.style.backgroundColor = clicks >= 5 ? 'green' : 'red';
+                if(clicks >= 5) {
+                    btn.disabled = true;
+                    clicksCount++;
+                    if (clicksCount >= 9) {
+                        calibrationOverlay.style.display = 'none';
+                        controlsPanel.classList.remove('hidden');
+                        togglePanelBtn.classList.add('active');
+                    }
+                }
+            });
+            calibrationPoints.appendChild(btn);
+        });
+    });
+
+    enableTrackingCheck.addEventListener('change', (e) => {
+        config.enableTracking = e.target.checked;
+        localStorage.setItem('eye-tracking-settings', JSON.stringify({...JSON.parse(localStorage.getItem('eye-tracking-settings') || '{}'), enableTracking: config.enableTracking}));
+        toggleTrackingMode();
+    });
+
+    recalibrateBtn.addEventListener('click', () => {
+        if (webgazerInitialized) {
+            window.webgazer.clearData(); // Wipe out the previous regression matrix structurally
+            showCalibrationScreen();
+        }
+    });
 
     const updateControls = () => {
         config.pattern = patternSelect.value;
@@ -529,10 +672,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 r = Math.max(config.size * (1 - (i * 0.1)), 5);
             }
 
-            // Draw shadow/glow
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = config.color;
-            
             // Draw Ball
             ctx.beginPath();
             ctx.arc(screenX, screenY, r, 0, Math.PI * 2);
@@ -540,8 +679,38 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fill();
             ctx.closePath();
             
-            // Reset shadow
-            ctx.shadowBlur = 0;
+            // Plot Eye Tracking Ghost Orb and calculate accuracy exclusively against the primary lead ball
+            if (i === 0 && config.enableTracking && currentGazeX !== null && currentGazeY !== null) {
+                // Ghost Ring Outer
+                ctx.beginPath();
+                ctx.arc(currentGazeX, currentGazeY, config.size * 1.5, 0, Math.PI * 2);
+                ctx.strokeStyle = config.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Ghost Core Inner
+                ctx.beginPath();
+                ctx.arc(currentGazeX, currentGazeY, config.size * 0.4, 0, Math.PI * 2);
+                ctx.fillStyle = hexToRgba(config.color, 0.5);
+                ctx.fill();
+
+                // Live Accuracy Mathematical Mapping
+                // 100% means looking directly at the dot. Drops off linearly towards 0% dynamically.
+                const dist = Math.hypot(screenX - currentGazeX, screenY - currentGazeY);
+                // Allow a generous 60px error radius for "perfect 100%" focus before aggressively scaling errors to 0% at ~360px out.
+                let iterAcc = 100 - ((Math.max(0, dist - 60) / 300) * 100);
+                iterAcc = Math.max(0, Math.min(100, iterAcc));
+                
+                accuracySamples.push(iterAcc);
+                if (accuracySamples.length > 25) accuracySamples.shift(); // ~0.4s trailing average window
+                
+                const avgAcc = accuracySamples.reduce((a, b) => a + b, 0) / accuracySamples.length;
+                trackingAccuracy.textContent = `Acc: ${Math.round(avgAcc)}%`;
+                
+                if (avgAcc > 85) trackingAccuracy.style.color = '#00ff00';
+                else if (avgAcc > 50) trackingAccuracy.style.color = 'yellow';
+                else trackingAccuracy.style.color = 'red';
+            }
         }
     };
 
@@ -633,6 +802,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     cycleCheckboxes.forEach(cb => {
                         cb.checked = s.cycleSelected.includes(cb.value);
                     });
+                }
+                if (s.enableTracking !== undefined) {
+                    config.enableTracking = s.enableTracking;
+                    enableTrackingCheck.checked = s.enableTracking;
+                    if (s.enableTracking) toggleTrackingMode(); // boot it!
                 }
             } catch (e) {
                 console.error("Local storage parse error", e);

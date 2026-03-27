@@ -116,6 +116,12 @@
                     <input type="range" id="trail-slider" min="0" max="0.95" step="0.05" value="0">
                 </div>
 
+                <div class="control-group" style="flex-direction: row; align-items: center; justify-content: space-between; margin-top: 10px; border-top: 1px solid var(--input-border); padding-top: 16px;">
+                    <label for="enable-tracking-check" style="cursor: pointer; flex-grow: 1; color: var(--accent-color);">Webcam Eye Tracking</label>
+                    <button id="recalibrate-btn" class="icon-button" style="display: none; padding: 4px 8px; font-size: 0.85rem; margin-right: 12px; border-radius: 4px; border: 1px solid var(--panel-border);" title="Retrain Prediction Matrix">🎯 Recalibrate</button>
+                    <input type="checkbox" id="enable-tracking-check" style="cursor: pointer; width: 18px; height: 18px;">
+                </div>
+
                 <button id="start-btn" class="primary-button">Start Exercise</button>
             </div>
         </aside>
@@ -127,6 +133,7 @@
         <div id="session-timer-container" class="timer-container">
             <span id="session-timer">00:00</span>
             <button id="reset-timer-btn" class="icon-button" title="Reset Timer" style="font-size: 1.2rem; margin-top: -2px;">⟳</button>
+            <div id="tracking-accuracy" style="display: none; padding-left: 10px; border-left: 1px solid var(--panel-border); font-size: 0.9rem; font-weight: 500; color: var(--accent-color);">Acc: 0%</div>
         </div>
 
         <!-- Cycle Controls -->
@@ -137,6 +144,35 @@
         </div>
     </div>
 
+    <!-- Eye Tracking Calibration Overlay -->
+    <div id="calibration-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: var(--bg-color); flex-direction: column; justify-content: center; align-items: center;">
+        
+        <!-- Opening Instructions -->
+        <div id="calibration-intro" style="text-align: center; max-width: 600px; padding: 20px; display: flex; flex-direction: column; align-items: center;">
+            <h2 style="margin-bottom: 20px; font-size: 2rem; color: var(--accent-color);">Eye Tracking Calibration</h2>
+            <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;">
+                WebGazer uses your webcam to predict where you are looking!<br><br>
+                Please assure your face is well-lit and perfectly framed in the feed below. When you click start, look directly at each dot that appears and <b>click it 5 times</b> to train the matrix.
+            </p>
+            
+            <video id="calibration-mirror" autoplay muted playsinline style="width: 320px; height: 240px; border-radius: 8px; border: 2px solid var(--accent-color); margin-bottom: 30px; background: #000; transform: scaleX(-1); box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></video>
+            
+            <button id="start-calibration-btn" class="primary-button" style="padding: 16px 32px; font-size: 1.2rem;">Start Calibration</button>
+        </div>
+
+        <!-- Persistent Active Instructions -->
+        <div id="calibration-active-text" style="display: none; text-align: center; pointer-events: none; z-index: 10;">
+            <h3 style="font-size: 1.8rem; color: var(--accent-color); margin-bottom: 10px;">Calibration in Progress</h3>
+            <p style="font-size: 1.2rem;">Stare intently at each red dot and <b>click it 5 times.</b></p>
+        </div>
+
+        <div id="calibration-points" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+            <!-- Dynamic dots injected here via JS -->
+        </div>
+    </div>
+
+    <!-- Load Official WebGazer script with pre-bundled assets -->
+    <script src="https://webgazer.cs.brown.edu/webgazer.js?"></script>
     <script src="script.js"></script>
 </body>
 </html>
