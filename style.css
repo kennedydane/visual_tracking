@@ -327,3 +327,27 @@ input[type="range"]:focus {
     background-color: var(--accent-color);
     color: #000;
 }
+
+.timer-container {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    z-index: 20;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+}
+
+#session-timer {
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-color);
+    letter-spacing: 1px;
+}

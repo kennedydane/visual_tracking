@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cycleDurationSlider = document.getElementById('cycle-duration-slider');
     const cycleDurationVal = document.getElementById('cycle-duration-val');
     const cycleCheckboxes = document.querySelectorAll('#cycle-checkboxes input[type="checkbox"]');
+    const sessionTimerEl = document.getElementById('session-timer');
+    const resetTimerBtn = document.getElementById('reset-timer-btn');
     
     // Value Displays
     const speedVal = document.getElementById('speed-val');
@@ -34,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let width, height;
     let animationId = null;
     let startTime = 0;
+    let totalExerciseTime = 0; // ms accumulated
     
     // Settings configuration
     const config = {
@@ -336,8 +339,35 @@ document.addEventListener('DOMContentLoaded', () => {
             startBtn.textContent = 'Start Exercise';
             startBtn.style.backgroundColor = 'var(--accent-color)';
             cancelAnimationFrame(animationId);
+            localStorage.setItem('eye-tracking-timer', totalExerciseTime);
         }
     });
+
+    // Helper to format/render timer
+    const updateTimerDisplay = () => {
+        const totalSeconds = Math.floor(totalExerciseTime / 1000);
+        // Going over 59:59 drops back to 00:00 without tracking hours as requested
+        const minutes = Math.floor(totalSeconds / 60) % 60;
+        const seconds = totalSeconds % 60;
+        
+        const mStr = minutes.toString().padStart(2, '0');
+        const sStr = seconds.toString().padStart(2, '0');
+        
+        sessionTimerEl.textContent = `${mStr}:${sStr}`;
+    };
+
+    resetTimerBtn.addEventListener('click', () => {
+        totalExerciseTime = 0;
+        updateTimerDisplay();
+        localStorage.setItem('eye-tracking-timer', 0);
+    });
+
+    // Save timer periodically while running
+    setInterval(() => {
+        if (isRunning) {
+            localStorage.setItem('eye-tracking-timer', totalExerciseTime);
+        }
+    }, 5000);
 
     // --- Render Loop ---
     const draw = (elapsedTime) => {
@@ -456,6 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const dt = elapsedTime - (window.lastTick || 0);
         window.lastTick = elapsedTime; // save state for pausing
         
+        // Track visual timer duration natively synced against frames
+        totalExerciseTime += dt;
+        updateTimerDisplay();
+        
         // Handle Auto-Cycling
         if (config.pattern === 'cycle' && config.cycleSelected.length > 0) {
             cycleTimer += dt;
@@ -510,6 +544,12 @@ document.addEventListener('DOMContentLoaded', () => {
             themeSelect.value = savedTheme;
         }
 
+        const savedTimer = localStorage.getItem('eye-tracking-timer');
+        if (savedTimer) {
+            totalExerciseTime = parseFloat(savedTimer);
+            updateTimerDisplay();
+        }
+
         const savedBg = localStorage.getItem('eye-tracking-custom-bg');
         if (savedBg) customBgColor.value = savedBg;
         
@@ -549,6 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resize();
     updateTheme();
     updateControls();
+    updateTimerDisplay();
     
     // Draw initial state
     draw(0);
