@@ -542,8 +542,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         const tag = e.target.tagName;
         if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !e.target.isContentEditable) {
-            if (e.key.length === 1) {
-                secretBuffer = (secretBuffer + e.key).slice(-6);
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                secretBuffer = (secretBuffer + e.key.toLowerCase()).slice(-6);
                 if (secretBuffer.endsWith('unhide')) {
                     showUI();
                     secretBuffer = '';
@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (uiHidden) return;
             controlsPanel.classList.toggle('hidden');
             togglePanelBtn.classList.toggle('active');
-        } else if (e.code === 'Space' && tag !== 'BUTTON') {
+        } else if (e.code === 'Space' && tag !== 'BUTTON' && tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') {
             e.preventDefault();
             startBtn.click();
         }
