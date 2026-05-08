@@ -1,0 +1,16 @@
+# Vendored MediaPipe binaries and WASM assets
+mediapipe/
+
+# Build and output artifacts
+graphify-out/
+
+# Logs
+*.log
+
+# Git
+.git/
+
+# Binary and data files
+*.wasm
+*.binarypb
+*.data

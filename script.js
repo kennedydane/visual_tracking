@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cycleCheckboxes = document.querySelectorAll('#cycle-checkboxes input[type="checkbox"]');
     const sessionTimerEl = document.getElementById('session-timer');
     const resetTimerBtn = document.getElementById('reset-timer-btn');
+    const sessionTimerContainer = document.getElementById('session-timer-container');
     const cycleControlsContainer = document.getElementById('cycle-controls-container');
     const cyclePrevBtn = document.getElementById('cycle-prev-btn');
     const cyclePauseBtn = document.getElementById('cycle-pause-btn');
@@ -85,6 +86,29 @@ document.addEventListener('DOMContentLoaded', () => {
         startTime: 0,
         duration: 800, // ms
         fromPattern: 'horizontal'
+    };
+
+    let uiHidden = false;
+    let secretBuffer = '';
+
+    const hideUI = () => {
+        controlsPanel.classList.add('stealth');
+        togglePanelBtn.classList.add('stealth');
+        sessionTimerContainer.classList.add('stealth');
+        cycleControlsContainer.classList.add('stealth');
+        uiHidden = true;
+        localStorage.setItem('eye-tracking-stealth', '1');
+    };
+
+    const showUI = () => {
+        controlsPanel.classList.remove('stealth');
+        togglePanelBtn.classList.remove('stealth');
+        sessionTimerContainer.classList.remove('stealth');
+        cycleControlsContainer.classList.remove('stealth');
+        uiHidden = false;
+        localStorage.removeItem('eye-tracking-stealth');
+        controlsPanel.classList.add('hidden');
+        togglePanelBtn.classList.remove('active');
     };
 
     // --- Path Helpers ---
@@ -510,17 +534,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     togglePanelBtn.addEventListener('click', () => {
+        if (uiHidden) return;
         controlsPanel.classList.toggle('hidden');
         togglePanelBtn.classList.toggle('active');
     });
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
+        const tag = e.target.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !e.target.isContentEditable) {
+            if (e.key.length === 1) {
+                secretBuffer = (secretBuffer + e.key).slice(-6);
+                if (secretBuffer.endsWith('unhide')) {
+                    showUI();
+                    secretBuffer = '';
+                } else if (secretBuffer.endsWith('hide')) {
+                    hideUI();
+                    secretBuffer = '';
+                }
+            } else {
+                secretBuffer = '';
+            }
+        }
+
         if (e.key === 'Escape') {
+            if (uiHidden) return;
             controlsPanel.classList.toggle('hidden');
             togglePanelBtn.classList.toggle('active');
-        } else if (e.code === 'Space' && e.target.tagName !== 'BUTTON') {
-            // Space to toggle pause/play (but not if focused on a button already)
+        } else if (e.code === 'Space' && tag !== 'BUTTON') {
             e.preventDefault();
             startBtn.click();
         }
@@ -541,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isRunning) {
             startBtn.textContent = 'Pause Exercise';
             startBtn.style.backgroundColor = 'var(--text-color)';
+            startBtn.style.color = 'var(--bg-color)';
             startTime = performance.now() - (window.lastTick || 0);
             controlsPanel.classList.add('hidden'); // auto hide panel 
             togglePanelBtn.classList.remove('active');
@@ -548,6 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             startBtn.textContent = 'Start Exercise';
             startBtn.style.backgroundColor = 'var(--accent-color)';
+            startBtn.style.color = '';
             cancelAnimationFrame(animationId);
             localStorage.setItem('eye-tracking-timer', totalExerciseTime);
         }
@@ -832,6 +874,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 console.error("Local storage parse error", e);
             }
+        }
+
+        if (localStorage.getItem('eye-tracking-stealth') === '1') {
+            hideUI();
         }
     };
 

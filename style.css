@@ -351,3 +351,5 @@ input[type="range"]:focus {
     color: var(--text-color);
     letter-spacing: 1px;
 }
+
+.stealth { display: none !important; }
