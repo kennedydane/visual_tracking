@@ -1,43 +1,71 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**This directory is a git submodule** (`github.com/kennedydane/visual_tracking`). Commits here
+go to that repository, not to oak-ed. The parent oak-ed CLAUDE.md's rules — no new hand-written
+JS, the WebAwesome design system, the Django template conventions — **do not apply here**. This
+is a standalone zero-dependency vanilla-JS app.
 
 ## Project Overview
 
-A zero-dependency, single-page web application for visual eye tracking exercises. Users follow a moving target across an HTML5 Canvas along various mathematical paths (horizontal, vertical, figure-8, etc.) to improve eye flexibility and smooth pursuit movements. Optional webcam-based eye tracking is provided via WebGazer.js (loaded from CDN).
+A single-page web app for visual eye-tracking exercises. Users follow a moving target across an
+HTML5 Canvas along mathematical paths (horizontal, vertical, figure-8, …) to train smooth
+pursuit. Optional webcam eye tracking via WebGazer.js, loaded from CDN.
 
 ## Running Locally
 
-No build step. Open `index.html` directly in a browser, or serve via any static server:
+No build step. Open `index.html` directly, or serve it:
 
 ```bash
 python3 -m http.server 8000
-# then open http://localhost:8000
 ```
 
-A local server is **required** for the webcam eye tracking feature (browsers block camera access on `file://` URLs).
+A local server is **required** for the webcam feature — browsers block camera access on
+`file://` URLs.
 
 ## Architecture
 
-This is a vanilla JS single-page app — three files do everything:
+Three files do everything. `script.js` is one `DOMContentLoaded` handler; find its parts by
+grep rather than line number (they move):
 
-- **`index.html`** — Full UI markup including the settings panel, calibration overlay, cycle controls, and session timer. WebGazer.js is loaded from CDN at the bottom.
-- **`script.js`** — All application logic in a single `DOMContentLoaded` handler. Key sections:
-  - **`patterns` object** (~line 111) — Dictionary of movement pattern functions. Each returns normalized `{x, y}` coordinates in the `[-1, 1]` range from a time parameter `t`. Waypoint-based patterns use the `getWaypoint()` helper for smooth interpolation.
-  - **`config` object** (~line 57) — Runtime settings state (speed, size, pattern, trail, etc.).
-  - **`draw()`** (~line 583) — Single render function: clears/trails canvas, draws the path preview, renders ball(s) with position from the active pattern function, and plots the eye tracking gaze overlay with live accuracy calculation.
-  - **`loop()`** (~line 737) — `requestAnimationFrame` loop that handles elapsed time, session timer, auto-cycle rotation, and pattern transitions.
-  - **Transition system** (~line 83) — Smooth interpolation between patterns using an 800ms ease-in-out lerp between the old and new pattern functions.
-  - **WebGazer integration** (~line 279) — Calibration flow with 9-point click training, gaze listener, and rolling accuracy average.
-- **`style.css`** — CSS custom properties for theming (dark/light/contrast/neon/custom). Theme switching works via `data-theme` attribute on `<body>`.
+| Part | Find it with |
+|---|---|
+| Movement patterns | `grep -n 'const patterns'` |
+| Runtime settings state | `grep -n 'const config'` |
+| Render function | `grep -n 'const draw'` |
+| `requestAnimationFrame` loop | `grep -n 'const loop'` |
+| Pattern transition lerp | `grep -n 'transition'` |
+| WebGazer calibration | `grep -n 'webgazer'` |
 
-## Key Design Patterns
+Note these are arrow-function **consts**, not `function` declarations, so `grep 'function draw'`
+finds nothing.
 
-- **Normalized coordinates**: All patterns output `[-1, 1]` values. The `draw()` function maps these to screen pixels, accounting for ball radius as margin. This keeps pattern logic resolution-independent.
-- **Per-pattern speed memory**: `patternSpeeds` object stores the user's preferred speed for each pattern individually. Switching patterns restores that pattern's saved speed.
-- **Persistent state**: All settings are serialized to `localStorage` under `eye-tracking-settings`, `eye-tracking-theme`, and `eye-tracking-timer` keys.
-- **Trail effect**: Instead of `clearRect()`, draws a semi-transparent background fill each frame, leaving ghosted previous positions.
+- **`index.html`** — full UI markup: settings panel, calibration overlay, cycle controls,
+  session timer. WebGazer.js is loaded from CDN at the bottom.
+- **`style.css`** — CSS custom properties for theming (dark/light/contrast/neon/custom); theme
+  switching via a `data-theme` attribute on `<body>`.
 
-## Vendored Dependencies
+## Key design patterns
 
-The `mediapipe/` directory contains vendored MediaPipe Face Mesh WASM binaries (~17MB). These are binary assets — do not modify them.
+- **Normalized coordinates**: every pattern outputs `{x, y}` in `[-1, 1]` from a time parameter
+  `t`. The render function maps these to pixels, accounting for ball radius as margin, which
+  keeps pattern logic resolution-independent. Waypoint-based patterns interpolate via
+  `getWaypoint()`.
+- **Per-pattern speed memory**: `patternSpeeds` stores a preferred speed per pattern; switching
+  patterns restores that pattern's saved speed.
+- **Trail effect**: instead of `clearRect()`, each frame draws a semi-transparent background
+  fill, leaving ghosted previous positions.
+- **Persistent state**: settings are serialized to `localStorage`. Find the full set with
+  `grep -o "localStorage.setItem('[^']*'" script.js` — there are currently six keys
+  (`eye-tracking-settings`, `-theme`, `-timer`, `-stealth`, `-custom-bg`, `-custom-ball`), and
+  hard-coded lists of them go stale.
+
+## Vendored dependencies
+
+`mediapipe/` contains vendored MediaPipe Face Mesh WASM binaries (~17MB). Binary assets — do
+not modify.
+
+## Known inconsistency with the parent project
+
+`index.html` loads Google Fonts and `webgazer.cs.brown.edu` from CDNs. oak-ed deliberately
+self-hosts fonts because children load its pages. Not yet reconciled; worth knowing before
+embedding this page more deeply in the games portal.
